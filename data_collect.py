@@ -64,16 +64,20 @@ def query_stock(id, stock_folder):
                 print('no data this month, go to next stock')
                 break
             for a_day in a_month:
-                lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
-                    (a_day.date.strftime('%Y_%m_%d'),\
-                    a_day.capacity,\
-                    a_day.turnover,\
-                    a_day.open,\
-                    a_day.high,\
-                    a_day.low,\
-                    a_day.close,\
-                    a_day.change,\
-                    a_day.transaction))
+                try:
+                    lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
+                        (a_day.date.strftime('%Y_%m_%d'),\
+                        a_day.capacity,\
+                        a_day.turnover,\
+                        a_day.open,\
+                        a_day.high,\
+                        a_day.low,\
+                        a_day.close,\
+                        a_day.change,\
+                        a_day.transaction))
+                except Exception:
+                    print('Error:')
+                    print(a_day)
                 # date=datetime.datetime(2010, 1, 4, 0, 0)
                 # capacity=6862825
                 # turnover=295967924
