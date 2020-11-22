@@ -60,6 +60,9 @@ def query_stock(id, stock_folder):
             lines = ['date,capacity,turnover,open,high,low,close,change,transaction']
             start_time = time.time()
             a_month = stock.fetch(the_year, the_mon)
+            if len(a_month) == 0:
+                print('no data this month, go to next stock')
+                break
             for a_day in a_month:
                 lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
                     (a_day.date.strftime('%Y_%m_%d'),\
