@@ -9,6 +9,7 @@ import pandas as pd
 import random
 import argparse
 import os
+from twse import twse
 
 
 proxy_list = [
@@ -37,11 +38,11 @@ for key in twstock.codes:
         all_group_list.append(twstock.codes[key].group)
 
 
-def query_stock(id, stock_folder):
+def query_stock(twse, id, stock_folder):
     base_data = twstock.codes[id]
     # print(base_data)
     # print(start)
-    stock = Stock(id, False)
+    # stock = Stock(id, False)
     start_year = base_data.start[:4]
     start_mon = base_data.start[5:7]
     print('start year: %s, start_mon %s' % (start_year, start_mon))
@@ -53,40 +54,36 @@ def query_stock(id, stock_folder):
     else:
         the_year = int(start_year)
         the_mon = int(start_mon)
+    prev = 0.0
     while (12 * the_year + the_mon) <= (12 * now_year + now_mon):
         file_path = os.path.join(stock_folder, '%s_%d_%02d.csv' % (id, the_year, the_mon))
         if not os.path.exists(file_path) or (the_year == now_year and the_mon == now_mon):
             print('fetching %s(%s) of %d/%d' % (id, base_data.name, the_year, the_mon))
             lines = ['date,capacity,turnover,open,high,low,close,change,transaction']
+            while (time.time() - prev) < 4.0:
+                time.sleep(0.5)
             start_time = time.time()
-            a_month = stock.fetch(the_year, the_mon)
+            prev = start_time
+            # a_month = stock.fetch(the_year, the_mon)
+            a_month = twse.get_month(id, the_year, the_mon)
             if len(a_month) == 0:
                 print('no data this month, go to next stock')
                 break
             for a_day in a_month:
                 try:
                     lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
-                        (a_day.date.strftime('%Y_%m_%d'),\
-                        a_day.capacity,\
-                        a_day.turnover,\
-                        a_day.open,\
-                        a_day.high,\
-                        a_day.low,\
-                        a_day.close,\
-                        a_day.change,\
-                        a_day.transaction))
+                        (a_day['date'],\
+                        a_day['capacity'],\
+                        a_day['turnover'],\
+                        a_day['open'],\
+                        a_day['high'],\
+                        a_day['low'],\
+                        a_day['close'],\
+                        a_day['change'],\
+                        a_day['transaction']))
                 except Exception:
                     print('Error:')
                     print(a_day)
-                # date=datetime.datetime(2010, 1, 4, 0, 0)
-                # capacity=6862825
-                # turnover=295967924
-                # open=43.6
-                # high=43.9
-                # low=42.85
-                # close=42.95
-                # change=-0.65
-                # transaction=2739
             with open(file_path, 'w') as ofile:
                 ofile.write('\n'.join(lines))
             # df = pd.read_csv(file_path, header=0)
@@ -113,6 +110,7 @@ def parse_arg():
 def main():
     opt = parse_arg()
     print(all_group_list)
+    t = twse()
     for group in opt.groups:
         stock_list = []
         # collect stock id list of group
@@ -124,7 +122,7 @@ def main():
             stock_folder = os.path.join(opt.output, info.code)
             if not os.path.exists(stock_folder):
                 os.mkdir(stock_folder)
-            query_stock(info.code, stock_folder)
+            query_stock(t, info.code, stock_folder)
     
     # sys.exit(0)
     # query_stock('1216')  
