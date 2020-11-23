@@ -123,7 +123,7 @@ def main():
             if not os.path.exists(stock_folder):
                 os.mkdir(stock_folder)
             query_stock(t, info.code, stock_folder)
-    
+    t.close()
     # sys.exit(0)
     # query_stock('1216')  
 
