@@ -60,37 +60,34 @@ def query_stock(twse, id, stock_folder):
         if not os.path.exists(file_path) or (the_year == now_year and the_mon == now_mon):
             print('fetching %s(%s) of %d/%d' % (id, base_data.name, the_year, the_mon))
             lines = ['date,capacity,turnover,open,high,low,close,change,transaction']
-            while (time.time() - prev) < 4.0:
+            while (time.time() - prev) < 5.0:
                 time.sleep(0.5)
             start_time = time.time()
             prev = start_time
             # a_month = stock.fetch(the_year, the_mon)
             a_month = twse.get_month(id, the_year, the_mon)
             if len(a_month) == 0:
-                print('no data this month, go to next stock')
-                break
-            for a_day in a_month:
-                try:
-                    lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
-                        (a_day['date'],\
-                        a_day['capacity'],\
-                        a_day['turnover'],\
-                        a_day['open'],\
-                        a_day['high'],\
-                        a_day['low'],\
-                        a_day['close'],\
-                        a_day['change'],\
-                        a_day['transaction']))
-                except Exception:
-                    print('Error:')
-                    print(a_day)
-            with open(file_path, 'w') as ofile:
-                ofile.write('\n'.join(lines))
-            # df = pd.read_csv(file_path, header=0)
-            # print(df)
+                print('no data this month, go to next month')
+            else:
+                for a_day in a_month:
+                    try:
+                        lines.append('%s,%ld,%ld,%.2f,%.2f,%.2f,%.2f,%.2f,%ld' %\
+                            (a_day['date'],\
+                            a_day['capacity'],\
+                            a_day['turnover'],\
+                            a_day['open'],\
+                            a_day['high'],\
+                            a_day['low'],\
+                            a_day['close'],\
+                            a_day['change'],\
+                            a_day['transaction']))
+                    except Exception:
+                        print('Error:')
+                        print(a_day)
+                with open(file_path, 'w') as ofile:
+                    ofile.write('\n'.join(lines))
             elapse_time = time.time() - start_time
             print('elapse seconds: %f' % elapse_time)
-            # sys.exit(0)
         if (the_mon < 12):
             the_mon += 1
         else:

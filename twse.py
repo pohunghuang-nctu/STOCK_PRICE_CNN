@@ -55,17 +55,22 @@ class twse(object):
             if resp.status == 200:
                 break
             else:
-                if retry >= 5:
-                    print('Fatal Error: retry > 5')
+                if retry >= 10:
+                    print('Fatal Error: retry > 10')
                     return []
                 print(resp.status, resp.reason)
                 retry += 1
-                time.sleep(5.0)
-                print('retry %d' % retry)
+                print('retry %d 120 seconds later' % retry)
+                time.sleep(120.0)
+                self.close()
+                self.conn = HTTPSConnection(TWSE_HOST)
+                self.conn.connect()
         # headers = resp.getheaders()
         # for header in headers:
         #     print(header)
-        data = json.loads(resp.read().decode('utf-8'))
+        datastr = resp.read().decode('utf-8')
+        # print(datastr)
+        data = json.loads(datastr)
         if data['stat'] == 'OK':
             # print(data['fields'])
             return self.orgnize_data(data['data'])
@@ -111,9 +116,9 @@ def query_stock(twse, id):
 
 def main():
     t = twse()
-    for id in STOCKID:
-        query_stock(t, id)
-    # data = t.get_month('1203', 2018, 7)
+    # for id in STOCKID:
+    #    query_stock(t, id)
+    data = t.get_month('1213', 2015, 3)
     # print(json.dumps(data, indent=4))
     # t.get_month('1210', 2020, 11)
     t.close()
