@@ -16,8 +16,7 @@ STOCKID = [
 
 class twse(object):
     def __init__(self):
-        self.conn = HTTPSConnection(TWSE_HOST)
-        self.conn.connect()
+        self.connect()
 
     def orgnize_data(self, raw_data):
         data = []
@@ -44,27 +43,44 @@ class twse(object):
             data.append(a_day)
         return data
 
+    def connect(self):
+        if hasattr(self, 'conn'):
+            if self.conn is not None:
+                self.close()
+        while True:
+            self.conn = HTTPSConnection(TWSE_HOST, timeout=10)
+            try:
+                self.conn.connect()
+            except Exception as e:
+                print('Error:', e.__class__, ' occurs')
+                time.sleep(20.0)
+                continue
+            break
+    
     def get_month(self, id, year, month):
         url = '%s?date=%d%02d01&stockNo=%s' %\
             (QUERY_URL, year, month, id)
         # print(url)
         retry = 0
         while True:
-            self.conn.request('GET', url)
+            try:
+                self.conn.request('GET', url)
+            except Exception as e:
+                print('error:', e.__class__, ' occurs')
+                self.connect()
+                continue
             resp = self.conn.getresponse()
             if resp.status == 200:
                 break
             else:
                 if retry >= 10:
                     print('Fatal Error: retry > 10')
-                    return []
+                    return [], 'over_retry'
                 print(resp.status, resp.reason)
                 retry += 1
                 print('retry %d 120 seconds later' % retry)
                 time.sleep(120.0)
-                self.close()
-                self.conn = HTTPSConnection(TWSE_HOST)
-                self.conn.connect()
+                self.connect()
         # headers = resp.getheaders()
         # for header in headers:
         #     print(header)
@@ -73,10 +89,10 @@ class twse(object):
         data = json.loads(datastr)
         if data['stat'] == 'OK':
             # print(data['fields'])
-            return self.orgnize_data(data['data'])
+            return self.orgnize_data(data['data']), 'OK'
         else:
-            print('error: %s' % json.dumps(data, indent=4))
-            return []
+            print('error: %s' % data['stat'])
+            return [], data['stat']
 
     def close(self):
         self.conn.close()
