@@ -65,22 +65,24 @@ class twse(object):
         while True:
             try:
                 self.conn.request('GET', url)
+                resp = self.conn.getresponse()
+                if resp.status == 200:
+                    break
+                else:
+                    if retry >= 10:
+                        print('Fatal Error: retry > 10')
+                        return [], 'over_retry'
+                    print(resp.status, resp.reason)
+                    retry += 1
+                    print('retry %d 20 seconds later' % retry)
+                    time.sleep(20.0)
+                    self.connect()                
             except Exception as e:
                 print('error:', e.__class__, ' occurs')
                 self.connect()
                 continue
-            resp = self.conn.getresponse()
-            if resp.status == 200:
-                break
-            else:
-                if retry >= 10:
-                    print('Fatal Error: retry > 10')
-                    return [], 'over_retry'
-                print(resp.status, resp.reason)
-                retry += 1
-                print('retry %d 120 seconds later' % retry)
-                time.sleep(120.0)
-                self.connect()
+            
+
         # headers = resp.getheaders()
         # for header in headers:
         #     print(header)
