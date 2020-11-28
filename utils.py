@@ -52,6 +52,12 @@ def day_next3_year(day_str):
     return '%d_%02d_%02d' % (y, m, d)
 
 
+def mon_3_years_ago(day_str):
+    y, m, d = y_m_d(day_str)
+    y -= 3
+    return '%d_%02d' % (y, m)
+   
+
 def date_to_week(day_str):
     dt = datetime.strptime(day_str, '%Y_%m_%d')
     week_str = dt.strftime('%Y_%W')
