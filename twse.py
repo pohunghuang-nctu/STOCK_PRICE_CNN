@@ -5,6 +5,7 @@ import twstock
 import os
 import time
 from datetime import datetime
+import traceback
 
 
 TWSE_HOST = 'www.twse.com.tw'
@@ -46,7 +47,10 @@ class twse(object):
     def connect(self):
         if hasattr(self, 'conn'):
             if self.conn is not None:
-                self.close()
+                try:
+                    self.close()
+                except:
+                    pass
         while True:
             self.conn = HTTPSConnection(TWSE_HOST, timeout=10)
             try:
@@ -79,6 +83,8 @@ class twse(object):
                     self.connect()                
             except Exception as e:
                 print('error:', e.__class__, ' occurs')
+                traceback.print_exc()
+                time.sleep(40.0)
                 self.connect()
                 continue
             
@@ -88,7 +94,12 @@ class twse(object):
         #     print(header)
         datastr = resp.read().decode('utf-8')
         # print(datastr)
-        data = json.loads(datastr)
+        try:
+            data = json.loads(datastr)
+        except json.decoder.JSONDecodeError:
+            print('decode error occurs. rawdata string: %s' % datastr)
+            self.connect()
+            return self.get_month(id, year, month)
         if data['stat'] == 'OK':
             # print(data['fields'])
             return self.orgnize_data(data['data']), 'OK'
@@ -136,8 +147,8 @@ def main():
     t = twse()
     # for id in STOCKID:
     #    query_stock(t, id)
-    data = t.get_month('1213', 2015, 3)
-    # print(json.dumps(data, indent=4))
+    data = t.get_month('3016', 2020, 11)
+    print(json.dumps(data, indent=4))
     # t.get_month('1210', 2020, 11)
     t.close()
 
