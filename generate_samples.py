@@ -9,6 +9,7 @@ import sys
 import utils
 import time
 import json
+import cv2
 
 
 all_group_list = []
@@ -173,6 +174,24 @@ def plot(ofile_path, recent_60d, recent_52w, recent_36m, boundary):
     plot_for_df(ofile_path, recent_36m, boundary, 3, 'Month')
     
 
+def concat_png(id, sample_date, ofile_path):
+    dirname = os.path.basename(ofile_path)
+    final_png = '%s.png' % dirname
+    if os.path.exists(os.path.join(ofile_path, final_png)):
+        print('skip concatenated, %s already there.' % final_png)
+    else:
+        img_list = []
+        for i in range(3):
+            png_path = os.path.join(ofile_path, '%s.%d.png' % (dirname, i+1))
+            if not os.path.exists(png_path):
+                return
+            else:
+                img_list.append(cv2.imread(png_path))
+                os.remove(png_path)
+        final_img = cv2.vconcat(img_list)
+        cv2.imwrite(os.path.join(ofile_path, final_png), final_img)
+
+
 def gen_samples(df, id, output_folder):
     start = time.time()
     gt_df = pd.DataFrame(columns=['id', 'date', 'up4', 'drop5'])
@@ -208,6 +227,8 @@ def gen_samples(df, id, output_folder):
                     gt = json.load(jfile)
                 # print('%s has been sampled, skip.' % sample_date)
             gt_df.loc[len(gt_df)] = [id, sample_date, gt['GT'][0], gt['GT'][1]]
+            # concate all 3 PNGs into one
+            concat_png(id, sample_date, ofile_path)
         sample_date = utils.nextday(sample_date)
     gt_df.to_csv(os.path.join(output_folder, '%s.csv' % id), index=False)
     up4 = len(gt_df[gt_df['up4'] == 1]) / len(gt_df)
