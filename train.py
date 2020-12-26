@@ -29,21 +29,28 @@ class LeNet(nn.Module):
         super(LeNet, self).__init__()
         print('Building model...')
         self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
+        self.pool22 = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 29 * 29, 120)
+        self.conv3 = nn.Conv2d(16, 32, 8)
+        self.conv4 = nn.Conv2d(32, 64, 6)
+        self.pool55 = nn.MaxPool2d(5, 5)
+        self.fc1 = nn.Linear(64 * 34 * 14, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, 16)
+        self.fc4 = nn.Linear(16, 2)
         self.relu = nn.ReLU()
         
     # connect these layers
     def forward(self, x):
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 29 * 29)
+        x = self.pool22(self.relu(self.conv1(x))) # ==> 6 * 1436 * 636 ==> 6 * 718 * 318
+        x = self.pool22(self.relu(self.conv2(x))) # ==> 16 * 714 * 314 ==> 16 * 357 * 157
+        x = self.pool22(self.relu(self.conv3(x))) # ==> 32 * 350 * 150 ==> 32 * 175 * 75
+        x = self.pool55(self.relu(self.conv4(x))) # ==> 64 * 170 * 70 ==>  64 * 34 * 14
+        x = x.view(-1, 64 * 34 * 14)
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
 
 class StockUp(object):

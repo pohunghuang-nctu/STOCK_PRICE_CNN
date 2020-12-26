@@ -67,7 +67,7 @@ def imgfolder_for_group(group, stock_list, opt):
             continue
         if s_dir.split('_')[0] not in stock_list:
             continue
-        dispatch_img(os.path.join(sample_folder, sdir), group_folder)
+        dispatch_img(os.path.join(sample_folder, s_dir), group_folder)
 
 
 def main():
