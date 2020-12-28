@@ -73,7 +73,7 @@ class StockUp(object):
             self.epoch = args.epoch
             self.train_acc = self.train()
             self.saveModel()
-            self.showWeights()
+            # self.showWeights()
         self.test()
 
     def checkdevice(self):
@@ -107,21 +107,23 @@ class StockUp(object):
         ])
 
         # The transform function for test data
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
-        ])
+        # transform_test = transforms.Compose([
+        #    transforms.ToTensor(),
+        #    transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
+        #])
 
 
-        self.trainset = torchvision.datasets.ImageFolder(self.in_path, transform=transform_train)
-        self.testset = torchvision.datasets.ImageFolder(self.in_path, transform=transform_test)
-
-        self.trainloader = torch.utils.data.DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
+        self.fullset = torchvision.datasets.ImageFolder(self.in_path, transform=transform_train)
+        print('Size of full set: %d' % len(self.fullset))
+        train_size = int(0.8 * len(self.fullset))
+        test_size = len(self.fullset) - train_size
+        self.trainset, self.testset = torch.utils.data.random_split(self.fullset, [train_size, test_size])
         print('Size of train data: %d' % len(self.trainset))
-        print('Size of train loader: %d' % len(self.trainloader))
-        self.testloader = torch.utils.data.DataLoader(self.testset, batch_size=self.batch_size, shuffle=False)
         print('Size of test data: %d' % len(self.testset))
-        print('Size of test loader: %d' % len(self.testloader))
+        self.trainloader = torch.utils.data.DataLoader(self.trainset, batch_size=self.batch_size, shuffle=True)
+        print('batches of train loader: %d' % len(self.trainloader))
+        self.testloader = torch.utils.data.DataLoader(self.testset, batch_size=self.batch_size, shuffle=False)        
+        print('batches of test loader: %d' % len(self.testloader))
         # you can also split validation set
         # self.validloader = torch.utils.data.DataLoader(self.validset, batch_size=self.batch_size, shuffle=True)
         return
@@ -129,9 +131,13 @@ class StockUp(object):
     def getModel(self):
         # Build a Convolution Neural Network
         if self.args.func == 'train':
-            self.net = LeNet()
-            print(self.net)
-            # Define loss function and optimizer
+            maybe_model_path = os.path.join(self.args.output_path, 'model.pt')
+            if os.path.exists(maybe_model_path):
+                self.loadModel(maybe_model_path)
+            else:
+                self.net = LeNet()
+                print(self.net)
+                # Define loss function and optimizer
             self.criterion = nn.CrossEntropyLoss()
             self.optimizer = optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
         elif self.args.func == 'test':
@@ -223,15 +229,26 @@ class StockUp(object):
                     class_total[cur_label] += 1
 
         print('Total accuracy is: {:4f}% and loss is: {:3.3f}'.format(100 * correct/len(self.testset), running_loss/iter_count))
-        print('For each class in dataset:')
-        records = {}
-        for i in range(len(self.classes)):
-            print('Accruacy for {:18s}: {:4.2f}%'.format(self.classes[i], 100 * class_correct[i]/class_total[i]))
-            records[self.classes[i]] = {'acc': 100 * class_correct[i]/class_total[i],
-                                        'correct': class_correct[i],
-                                        'total': class_total[i]}
+        # print('For each class in dataset:')
+        record = {}
+        record['acc'] = correct/len(self.testset)
+        for i in range(len(self.classes)): # there're only 2 classes
+            if i == 0:
+                TN = class_correct[i]
+                FP = class_total[i] - TN
+            else:
+                TP = class_correct[i]
+                FN = class_total[i] - TP
+            #print('Accruacy for {:18s}: {:4.2f}%'.format(self.classes[i], 100 * class_correct[i]/class_total[i]))
+        recall = TP / (TP + FN)
+        
+        precision = TP / (TP + FP)
+        print('TP/(TP + FN) -- Recall: %.3f' % recall)
+        print('TP/(TP + FP) -- Precision: %.3f' % precision) 
+        record['recall'] = recall
+        record['precision'] = precision
         with open(os.path.join(self.args.output_path, 'records.json'), 'w') as ofile:
-            ofile.write(json.dumps(records, indent=4))
+            ofile.write(json.dumps(record, indent=4))
 
     def saveModel(self):
         # After training , save the model first
