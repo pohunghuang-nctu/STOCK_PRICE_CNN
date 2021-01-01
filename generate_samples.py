@@ -133,7 +133,11 @@ def sample(df, the_date, ofile_path, boundary):
     if (os.path.exists(final_png_path)): # the final png is there, skip
         return
     # daily capacity, high, low, close among last 60 days
-    base_index = df.index[df['date'] == the_date].to_list()[0]
+    the_latest_date = df['date'].max()
+    if the_date = utils.nextday(the_latest_date):
+        base_index = df.index[df['date'] == the_latest_date].to_list()[0] + 1
+    else:
+        base_index = df.index[df['date'] == the_date].to_list()[0]
     recent_60d = df.iloc[base_index - 60: base_index]
     recent_60d.reset_index(drop=True, inplace=True)
     # print(df.iloc[base_index - 60: base_index])
@@ -251,7 +255,10 @@ def gen_samples(df, id, output_folder):
             sample(df, sample_date, ofile_path, boundary)
             concat_png(id, sample_date, ofile_path)
         sample_date = utils.nextday(sample_date)
-
+    # predict one day
+    print('sampling on latest data to predict one day %s' % sample_date)
+    sample(df, sample_date, ofile_path, boundary)
+    concat_png(id, sample_date, ofile_path)
 
 def gen_samples_for_stock(id, opt):
     rawdata_folder = opt.rawdata
