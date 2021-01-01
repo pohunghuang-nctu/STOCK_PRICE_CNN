@@ -11,22 +11,17 @@ import sys
 import argparse
 import json
 from train import LeNet
-from PIL imporg Image
+from PIL import Image
+import twstock
 
 
-def loadModel(path):
+def loadModel(group, model_root):
     print('Loading model...')
-    if path.split('.')[-1] == 't7':
-        # If you just save the model parameters, you
-        # need to redefine the model architecture, and
-        # load the parameters into your model
-        net = LeNet()
-        checkpoint = torch.load(path)
-        net.load_state_dict(checkpoint['net'])
-    elif path.split('.')[-1] == 'pt':
-        # If you save the entire model
-        net = torch.load(path)
-    return net
+    up4_model_path = os.path.join(model_root, group, 'up4', 'model.pt')
+    net_up4 = torch.load(up4_model_path)
+    drop5_model_path = os.path.join(model_root, group, 'drop5', 'model.pt')
+    net_drop5 = torch.load(drop5_model_path)
+    return net_up4, net_drop5
 
 
 def predict(img_path, net, transforms):
@@ -58,22 +53,63 @@ def arg_parse():
     parser.add_argument('group', help='The group of stock choose to predict.')
     parser.add_argument('datestr', help='The string of date to predict, eq. 2020_12_28')
     parser.add_argument('--model_root', dest='model_root', default='../model_root', help='The root folder of model.')
-    parser.add_argument('--img_root', dest='img_root', default='../img_root', help='The root folder of stock info image.')  
-    parser.add_argument('--output', dest='output', default='../predictions', help='The root folder of prediction output.')  
+    parser.add_argument('--samples', dest='sample_folder', default='../samples', help='The root folder of stock info image.')  
+    parser.add_argument('--output', dest='output_root', default='../predictions', help='The root folder of prediction output.')  
     args = parser.parse_args()
     return args
 
 
-def prepare_imagefolder(group, datastr, predict_type, img_root, output_root):
+def prepare_imagefolder(group, datestr, sample_folder, output_root):
     # find all png of this group + date + predict_type, 
     # and create a new folder in output root, given only folder '1' 
     # link png into folder '1' (we don't need to care the answer
-    pass
+    stock_list = []
+    # collect stock id list of group
+    for key in twstock.codes.keys():
+        if twstock.codes[key].group == group and\
+                twstock.codes[key].market == '上市':
+            stock_list.append(key)
+    print('### %s ###' % group)
+    pred_folder = os.path.join(output_root, '%s_%s' % (group, datestr))
+    if not os.path.exists(pred_folder):
+        os.mkdir(pred_folder)
+    img_folder = os.path.join(pred_folder, 'img_folder')
+    if not os.path.exists(img_folder):
+        os.mkdir(img_folder)
+    dest = os.path.join(img_folder, '1')
+    if not os.path.exists(dest):
+        os.mkdir(dest)
+    if not os.path.exists(os.path.join(img_folder, '2')):    
+        os.mkdir(os.path.join(img_folder, '2'))
+    for idir in os.listdir(sample_folder):
+        if idir.split('_')[0] not in stock_list: # not in this group
+            continue
+        date_postfix = '_'.join(idir.split('_')[1:])
+        if date_postfix != datestr:
+            continue
+        dispatch_img(os.path.join(sample_folder, idir), dest)
+    return img_folder
 
-def prepare_data(group, datestr, img_root):
+
+def dispatch_img(source_folder, dest_folder):
+    dirname = os.path.basename(source_folder)
+    png_path = os.path.join(source_folder, '%s.png' % dirname)
+    if not os.path.exists(png_path):
+        return
+    create_link(png_path, dest_folder)
+
+
+def create_link(real_path, linked_folder):
+    dest = os.path.join(linked_folder, os.path.basename(real_path))
+    if not os.path.exists(dest):
+        os.symlink(real_path, dest)
+        print('symbolic link %s created.' % dest)
+
+
+def prepare_data(group, datestr, sample_folder, output_root):
     # create one set of image folder is enough
     # no matter up4 or drop5, we use the same input. 
-    in_path = prepare_imagefolder(group, datestr, img_root)
+    in_path = prepare_imagefolder(group, datestr, sample_folder, output_root)
     tranform_compose = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
@@ -88,13 +124,15 @@ def prepare_data(group, datestr, img_root):
 def main():
     args = arg_parse()
     classes = ['false', 'true']
+    the_loader = prepare_data(
+        args.group, args.datestr, args.sample_folder, args.output_root)  
+    sys.exit(0)  
     m_up4, m_drop5 = loadModel(args.group, args.model_root)
     device = checkdevice()
     m_up4 = m_up4.to(device)
     m_up4.eval()
     m_drop5 = m_up4.to(device)
     m_drop5.eval()
-    the_loader = prepare_data(args.group, args.datestr, args.img_root)
     the_result = predict(the_loader, (m_up4, m_drop5))
 
 

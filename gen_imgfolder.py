@@ -65,6 +65,9 @@ def imgfolder_for_group(group, stock_list, opt):
     for s_dir in os.listdir(sample_folder):
         if not os.path.isdir(os.path.join(sample_folder, s_dir)):
             continue
+        if not os.path.exists(os.path.join(sample_folder, s_dir, 'gt.json')):
+            # yet ground truth
+            continue
         if s_dir.split('_')[0] not in stock_list:
             continue
         dispatch_img(os.path.join(sample_folder, s_dir), group_folder)

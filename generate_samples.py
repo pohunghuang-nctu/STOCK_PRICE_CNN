@@ -101,9 +101,7 @@ def data_qualification(df):
     return qualified, message
 
 
-def sample(df, the_date, ofile_path, boundary):
-    if not os.path.exists(ofile_path):
-        os.mkdir(ofile_path)
+def ground_truth(df, the_date, ofile_path):
     sample_data = {'GT': [0, 0]}
     # ground truth 0: if ever 4% price-up in coming month
     # ground truth 1: if ever 5% price-drop in coming month
@@ -121,7 +119,19 @@ def sample(df, the_date, ofile_path, boundary):
         sample_data['GT'][1] = 1
         sample_data['drop_5_date'] = drop_5['date'].tolist()
         sample_data['drop_5_price'] = drop_5['close'].tolist()
-    
+    # save and return the ground truth      
+    with open(os.path.join(ofile_path, 'gt.json'), 'w') as jfile:
+        jfile.write(json.dumps(sample_data, indent=4))
+    return sample_data
+
+
+def sample(df, the_date, ofile_path, boundary):
+    if not os.path.exists(ofile_path):
+        os.mkdir(ofile_path)
+    dirname = os.path.basename(ofile_path)
+    final_png_path = os.path.join(ofile_path, '%s.png' % dirname)
+    if (os.path.exists(final_png_path)): # the final png is there, skip
+        return
     # daily capacity, high, low, close among last 60 days
     base_index = df.index[df['date'] == the_date].to_list()[0]
     recent_60d = df.iloc[base_index - 60: base_index]
@@ -143,10 +153,6 @@ def sample(df, the_date, ofile_path, boundary):
     recent_36m = recent_36m.groupby(by=['month']).mean()
     recent_36m.reset_index(drop=True, inplace=True)
     plot(ofile_path, recent_60d, recent_52w, recent_36m, boundary)
-    # save and return the ground truth
-    with open(os.path.join(ofile_path, 'gt.json'), 'w') as jfile:
-        jfile.write(json.dumps(sample_data, indent=4))
-    return sample_data
 
 
 def plot_for_df(ofile_path, df, boundary, sequence, xlabel):
@@ -216,8 +222,10 @@ def gen_samples(df, id, output_folder):
             ofile_path = os.path.join(output_folder, '%s_%s' % (id, sample_date))
             gt_file = os.path.join(ofile_path, 'gt.json')
             if not os.path.exists(gt_file):
-                # print('sampling %s' % sample_date)
-                gt = sample(df, sample_date, ofile_path, boundary)
+                print('sampling %s' % sample_date)
+                sample(df, sample_date, ofile_path, boundary)
+                concat_png(id, sample_date, ofile_path)
+                gt = ground_truth(df, sample_date, ofile_path)
                 if gt['GT'][0] == 1:
                     print('up 4% dates:', ' '.join(gt['up_4_date']))
                 if gt['GT'][1] == 1:
@@ -228,7 +236,6 @@ def gen_samples(df, id, output_folder):
                 # print('%s has been sampled, skip.' % sample_date)
             gt_df.loc[len(gt_df)] = [id, sample_date, gt['GT'][0], gt['GT'][1]]
             # concate all 3 PNGs into one
-            concat_png(id, sample_date, ofile_path)
         sample_date = utils.nextday(sample_date)
     gt_df.to_csv(os.path.join(output_folder, '%s.csv' % id), index=False)
     up4 = len(gt_df[gt_df['up4'] == 1]) / len(gt_df)
@@ -236,6 +243,14 @@ def gen_samples(df, id, output_folder):
     print('%s(%s) up 4%%: %.2f, drop 5%%: %.2f' % (id, twstock.codes[id].name, up4, drop5))
     elapse_time = time.time() - start
     print('Elapse %.2f seconds for generating samples for %s(%s)' % (elapse_time, id, twstock.codes[id].name))
+    ### generate png only (yet ground truth) ####
+    while sample_date <= df['date'].max():
+        if len(df[df['date'] == sample_date]) == 1:
+            print('sampling for yet ground truth %s' % sample_date)
+            ofile_path = os.path.join(output_folder, '%s_%s' % (id, sample_date))
+            sample(df, sample_date, ofile_path, boundary)
+            concat_png(id, sample_date, ofile_path)
+        sample_date = utils.nextday(sample_date)
 
 
 def gen_samples_for_stock(id, opt):
