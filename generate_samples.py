@@ -29,7 +29,7 @@ def load_stock(stock_id, data_folder):
     stock_df = pd.concat(dfs, axis=0, ignore_index=True)
     stock_df['week'] = stock_df['date'].apply(utils.date_to_week)
     stock_df['month'] = stock_df['date'].apply(lambda x: x[:7])
-    print(stock_df.head())
+    # print(stock_df.head())
     return stock_df
 
 
@@ -146,7 +146,7 @@ def sample(df, the_date, ofile_path, boundary):
         return
     # daily capacity, high, low, close among last 60 days
     the_latest_date = df['date'].max()
-    if the_date = utils.nextday(the_latest_date):
+    if the_date == utils.nextday(the_latest_date):
         base_index = df.index[df['date'] == the_latest_date].to_list()[0] + 1
     else:
         base_index = df.index[df['date'] == the_date].to_list()[0]
@@ -154,7 +154,7 @@ def sample(df, the_date, ofile_path, boundary):
     recent_60d.reset_index(drop=True, inplace=True)
     # print(df.iloc[base_index - 60: base_index])
     # weekly capacity, high, low, close among last 52 weeks
-    curr_week = df[df['date'] == the_date]['week'].iloc[0]
+    curr_week = utils.date_to_week(the_date)
     week_prev_year = utils.week_prev_year(the_date)
     recent_52w = df[(df['week'] <= curr_week) & (df['week'] >= week_prev_year) & (df['date'] < the_date)]
     recent_52w = recent_52w[['week', 'close', 'transaction']].copy()
@@ -199,9 +199,7 @@ def plot(ofile_path, recent_60d, recent_52w, recent_36m, boundary):
 def concat_png(id, sample_date, ofile_path):
     dirname = os.path.basename(ofile_path)
     final_png = '%s.png' % dirname
-    if os.path.exists(os.path.join(ofile_path, final_png)):
-        print('skip concatenated, %s already there.' % final_png)
-    else:
+    if not os.path.exists(os.path.join(ofile_path, final_png)):
         img_list = []
         for i in range(3):
             png_path = os.path.join(ofile_path, '%s.%d.png' % (dirname, i+1))
@@ -256,21 +254,24 @@ def gen_samples(df, id, output_folder):
     gt_df.to_csv(os.path.join(output_folder, '%s.csv' % id), index=False)
     up4 = len(gt_df[gt_df['up4'] == 1]) / len(gt_df)
     drop5 = len(gt_df[gt_df['drop5'] == 1]) / len(gt_df)
-    print('%s(%s) up 4%%: %.2f, drop 5%%: %.2f' % (id, twstock.codes[id].name, up4, drop5))
-    elapse_time = time.time() - start
-    print('Elapse %.2f seconds for generating samples for %s(%s)' % (elapse_time, id, twstock.codes[id].name))
+    print('%s(%s) up 4%%: %.2f, drop 5%%: %.2f' % (id, twstock.codes[id].name, up4, drop5))    
     ### generate png only (yet ground truth) ####
+    print('sampling for yet ground truth from %s to %s' % (sample_date, df['date'].max()))
     while sample_date <= df['date'].max():
         if len(df[df['date'] == sample_date]) == 1:
-            print('sampling for yet ground truth %s' % sample_date)
+            
             ofile_path = os.path.join(output_folder, '%s_%s' % (id, sample_date))
             sample(df, sample_date, ofile_path, boundary)
             concat_png(id, sample_date, ofile_path)
         sample_date = utils.nextday(sample_date)
     # predict one day
     print('sampling on latest data to predict one day %s' % sample_date)
+    ofile_path = os.path.join(output_folder, '%s_%s' % (id, sample_date))
     sample(df, sample_date, ofile_path, boundary)
     concat_png(id, sample_date, ofile_path)
+    elapse_time = time.time() - start
+    print('Elapse %.2f seconds for generating samples for %s(%s)' % (elapse_time, id, twstock.codes[id].name))
+
 
 def gen_samples_for_stock(id, opt):
     rawdata_folder = opt.rawdata
