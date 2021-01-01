@@ -39,11 +39,23 @@ def incontinuous_month(df):
             int(x.split('_')[0]) - 2010) * 12 + int(x.split('_')[1])).\
         drop_duplicates()
     the_range = year_mon.max() - year_mon.min() + 1
+    if year_mon.min() % 12 == 0:
+        mon_of_min_ym = 12
+        year_of_min_ym = 2010 + (year_mon.min() // 12) - 1
+    else:
+        mon_of_min_ym = year_mon.min() % 12
+        year_of_min_ym = 2010 + (year_mon.min() // 12) 
+    if year_mon.max() % 12 == 0:
+        mon_of_max_ym = 12
+        year_of_max_ym = 2010 + (year_mon.max() // 12) - 1
+    else:
+        mon_of_max_ym = year_mon.max() % 12
+        year_of_max_ym = 2010 + (year_mon.max() // 12)
     print(
         '# of different months: %d, from %d/%02d to %d/%02d' %\
         (len(year_mon),\
-         2010 + year_mon.min() // 12, year_mon.min() % 12,
-         2010 + year_mon.max() // 12, year_mon.max() % 12))
+         year_of_min_ym, mon_of_min_ym,
+         year_of_max_ym, mon_of_max_ym))
     if the_range != len(year_mon):
         return True
     # print(year_mon)
