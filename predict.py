@@ -223,6 +223,7 @@ def summarize(summary_path):
     print(tb_up4.draw())
 
     no_up4_df = df[df['up4'] == 0].sort_values(['up4_trend'], ascending=False)
+    
 
     #drop5_df = df[df['drop5'] == 1].sort_values(['drop5_trend'], ascending=False)
 
