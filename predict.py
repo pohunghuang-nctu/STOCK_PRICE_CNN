@@ -208,10 +208,15 @@ def predict(the_loader, models, device):
 def summarize(summary_path):
     df = pd.read_csv(summary_path, header=0)
     up4_df = df[df['up4'] == 1].sort_values(['up4_trend'], ascending=False)
-    up4_df_tb = up4_df[['id', 'name']]
-    up4_df_tb['score'] = up4_df['up4_trend']
-    up4_df_tb['predict drop5'] = up4_df['drop5'].apply(lambda x: 'yes' if x == 1 else 'no')
-    up4_df_tb['hit/miss'] = up4_df['up4_predicted'].apply(lambda x: 'yet decided' if x == 0 else 'hit' if x == 1 else 'miss')
+    up4_df_tb = up4_df[['id', 'name', 'up4_trend', 'drop5', 'up4_predicted']]
+    up4_df_tb = up4_df_tb.rename(
+        columns={
+            'up4_trend': 'score',
+            'drop5': 'predict drop5',
+            'up4_predicted': 'hit/miss'})
+    # up4_df_tb['score'] = up4_df['up4_trend']
+    up4_df_tb['predict drop5'] = up4_df_tb['predict drop5'].apply(lambda x: 'yes' if x == 1 else 'no')
+    up4_df_tb['hit/miss'] = up4_df_tb['hit/miss'].apply(lambda x: 'yet decided' if x == 0 else 'hit' if x == 1 else 'miss')
     # print(up4_df_tb)
     tb_up4 = Texttable()
     tb_up4.set_cols_align(['l', 'l', 'r', 'l', 'l'])
@@ -223,9 +228,24 @@ def summarize(summary_path):
     print(tb_up4.draw())
 
     no_up4_df = df[df['up4'] == 0].sort_values(['up4_trend'], ascending=False)
+    no_up4_df_tb = no_up4_df[['id', 'name', 'up4_trend', 'drop5', 'up4_predicted']]
+    no_up4_df_tb = no_up4_df_tb.rename(
+        columns={
+            'up4_trend': 'score',
+            'drop5': 'predict drop5',
+            'up4_predicted': 'hit/miss'})
+    # up4_df_tb['score'] = up4_df['up4_trend']
+    no_up4_df_tb['predict drop5'] = no_up4_df_tb['predict drop5'].apply(lambda x: 'yes' if x == 1 else 'no')
+    no_up4_df_tb['hit/miss'] = no_up4_df_tb['hit/miss'].apply(lambda x: 'yet decided' if x == 0 else 'hit' if x == 1 else 'miss')
     
-
-    #drop5_df = df[df['drop5'] == 1].sort_values(['drop5_trend'], ascending=False)
+    tb_no_up4 = Texttable()
+    tb_no_up4.set_cols_align(['l', 'l', 'r', 'l', 'l'])
+    tb_no_up4.set_cols_dtype(['t', 't', 'f', 't', 't'])
+    # print(up4_df.columns.to_numpy().shape)
+    tb_no_up4.header(no_up4_df_tb.columns.to_numpy())
+    tb_no_up4.add_rows(no_up4_df_tb.values, header=False)
+    print('##### predict NO up 4% in one month #####')
+    print(tb_no_up4.draw())
 
 
 def main():
