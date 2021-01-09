@@ -208,14 +208,22 @@ class StockUp(object):
         class_correct = [0 for i in range(len(self.classes))]
         class_total = [0 for i in range(len(self.classes))]
         with torch.no_grad(): # no need to keep the gradient for backpropagation
+            num_batchs = len(self.testloader)
+            ith_batchs = 1
             for data in self.testloader:
+                print('%d/%d batch is running...' % (ith_batchs, num_batchs))
+                ith_batchs += 1
                 images, labels = data
                 images = images.to(self.device) 
                 labels = labels.to(self.device)
                 outputs = self.net(images)
                 _, pred = outputs.max(1)
                 correct += pred.eq(labels).sum().item()
-                c_eachlabel = pred.eq(labels).squeeze()
+                # c_eachlabel = pred.eq(labels).squeeze()
+                c_eachlabel = pred.eq(labels)
+                # print('c_eachlabel.shape ==' )
+                # print(c_eachlabel.shape)
+                # sys.exit(0)
                 loss = self.criterion(outputs, labels)
                 iter_count += 1
                 running_loss += loss.item()
@@ -240,9 +248,14 @@ class StockUp(object):
                 TP = class_correct[i]
                 FN = class_total[i] - TP
             #print('Accruacy for {:18s}: {:4.2f}%'.format(self.classes[i], 100 * class_correct[i]/class_total[i]))
-        recall = TP / (TP + FN)
-        
-        precision = TP / (TP + FP)
+        if TP + FN == 0:
+            recall = 0
+        else:
+            recall = TP / (TP + FN)
+        if TP + FP == 0:
+            precision = 0
+        else:
+            precision = TP / (TP + FP)
         print('TP/(TP + FN) -- Recall: %.3f' % recall)
         print('TP/(TP + FP) -- Precision: %.3f' % precision) 
         record['recall'] = recall

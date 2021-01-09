@@ -84,9 +84,12 @@ def query_stock(twse, id, stock_folder):
     prev = 0.0
     while (12 * the_year + the_mon) <= (12 * now_year + now_mon):
         if '%d_%02d' % (the_year, the_mon) in invalid_month:
-            print('Not exist data for %s: %d/%02d' % (id, the_year, the_mon))
-            the_year, the_mon = next_month(the_year, the_mon)
-            continue
+            if not (the_year == now_year and the_mon == now_mon):
+                print('Not exist data for %s: %d/%02d' % (id, the_year, the_mon))
+                the_year, the_mon = next_month(the_year, the_mon)
+                continue
+            else:
+                invalid_month.remove('%d_%02d' % (the_year, the_mon))
         file_path = os.path.join(stock_folder, '%s_%d_%02d.csv' % (id, the_year, the_mon))
         if not os.path.exists(file_path) or (the_year == now_year and the_mon == now_mon):
             if the_year == now_year and the_mon == now_mon:
@@ -103,7 +106,8 @@ def query_stock(twse, id, stock_folder):
             a_month, message = twse.get_month(id, the_year, the_mon)
             if message != 'OK':
                 if message == '很抱歉，沒有符合條件的資料!':
-                    invalid_month.append('%d_%02d' % (the_year, the_mon))
+                    if not (the_year == now_year and the_mon == now_mon): # never let current month invalid
+                        invalid_month.append('%d_%02d' % (the_year, the_mon))
                 print('no data this month, go to next month')
             else:
                 for a_day in a_month:
