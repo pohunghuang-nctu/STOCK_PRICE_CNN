@@ -206,6 +206,7 @@ def predict(the_loader, models, device):
             
 
 def summarize(summary_path):
+    output_folder = os.path.dirname(summary_path)
     df = pd.read_csv(summary_path, header=0)
     up4_df = df[df['up4'] == 1].sort_values(['up4_trend'], ascending=False)
     up4_df_tb = up4_df[['id', 'name', 'up4_trend', 'drop5', 'up4_predicted']]
@@ -226,7 +227,8 @@ def summarize(summary_path):
     tb_up4.add_rows(up4_df_tb.values, header=False)
     print('##### predict up 4% in one month #####')
     print(tb_up4.draw())
-
+    with codecs.open(os.path.join(output_folder, 'up4_list.txt'), 'w', 'utf-8') as ufile:
+        ufile.write(tb_up4.draw())
     no_up4_df = df[df['up4'] == 0].sort_values(['up4_trend'], ascending=False)
     no_up4_df_tb = no_up4_df[['id', 'name', 'up4_trend', 'drop5', 'up4_predicted']]
     no_up4_df_tb = no_up4_df_tb.rename(
@@ -246,6 +248,8 @@ def summarize(summary_path):
     tb_no_up4.add_rows(no_up4_df_tb.values, header=False)
     print('##### predict NO up 4% in one month #####')
     print(tb_no_up4.draw())
+    with codecs.open(os.path.join(output_folder, 'no_up4_list.txt'), 'w', 'utf-8') as nfile:
+        nfile.write(tb_no_up4.draw())
 
 
 def main():
