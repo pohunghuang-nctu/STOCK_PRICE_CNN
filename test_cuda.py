@@ -126,6 +126,7 @@ def prepare_data(group, datestr, sample_folder, output_root):
 
 def main():
     device = checkdevice()
+    sys.exit(0)
     args = arg_parse()
     m_up4, m_drop5 = loadModel(args.group, args.model_root)
     m_up4 = m_up4.to(device)
