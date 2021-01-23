@@ -19,7 +19,10 @@ for key in twstock.codes:
 
 def load_stock(stock_id, data_folder):
     stock_folder_path = os.path.join(data_folder, stock_id)
-    assert os.path.exists(stock_folder_path), 'Invalid stock folder path: %s' % stock_folder_path
+    if not os.path.exists(stock_folder_path):
+        print('Stock folder not exists, skip sampling. %s' % stock_folder_path)
+        return None
+    # assert os.path.exists(stock_folder_path), 'Invalid stock folder path: %s' % stock_folder_path
     dfs = []
     for file in sorted(os.listdir(stock_folder_path)):
         if not file.endswith('.csv'):
@@ -278,6 +281,8 @@ def gen_samples_for_stock(id, opt):
     output_folder = opt.output
     print('%s (%s) load raw data into dataframe ...' % (id, twstock.codes[id].name))
     stock_df = load_stock(id, rawdata_folder)
+    if stock_df is None:
+        return
     print('%s (%s) qualifying data ...' % (id, twstock.codes[id].name))
     qualified, message = data_qualification(stock_df)
     print('Result:%s' % message)

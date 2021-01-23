@@ -16,6 +16,7 @@ import twstock
 import pandas as pd
 import codecs
 from texttable import Texttable
+from shutil import copyfile
 
 
 def loadModel(group, model_root, device):
@@ -103,8 +104,12 @@ def create_link(real_path, linked_folder):
     dest = os.path.join(linked_folder, os.path.basename(real_path))
     if not os.path.exists(dest):
         print(real_path)
-        os.symlink(real_path, dest)
-        print('symbolic link %s created.' % dest)
+        if os.name == 'nt':
+            copyfile(real_path, dest)
+            print('file %s copied.' % dest)
+        else:
+            os.symlink(real_path, dest)
+            print('symbolic link %s created.' % dest)
 
 
 def get_file_list(in_path):
