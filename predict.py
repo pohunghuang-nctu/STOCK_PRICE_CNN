@@ -1,4 +1,5 @@
-#!/home/user/anaconda3/bin/python
+#!/usr/bin/python
+import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -6,7 +7,6 @@ import torch.nn as nn
 import torch.optim as optim
 import os
 import matplotlib.pyplot as plt
-import numpy as np
 import sys
 import argparse
 import json
@@ -127,6 +127,9 @@ def prepare_data(group, datestr, sample_folder, output_root):
     in_path = prepare_imagefolder(group, datestr, sample_folder, output_root)
     output_folder = os.path.dirname(in_path)
     file_list = get_file_list(in_path)
+    if len(file_list) == 0:
+        print('No sample to be predicted, stop.')
+        sys.exit(0)
     tranform_compose = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1)),
@@ -263,7 +266,7 @@ def main():
     device = checkdevice()
     the_loader, file_list, output_folder = prepare_data(
         args.group, args.datestr, args.sample_folder, args.output_root)
-    # print(file_list)  
+    # print(file_list) 
     m_up4, m_drop5 = loadModel(args.group, args.model_root, device)
     r_up4, r_drop5 = predict(the_loader, (m_up4, m_drop5), device)
     summary_path = detailize_result(r_up4, r_drop5, file_list, args.sample_folder, output_folder)
