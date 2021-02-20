@@ -139,8 +139,8 @@ def proceed_train(args):
             continue
         with open(record_path, 'r') as rfile:
             record = json.load(rfile)
-            if record['recall'] < 0.8:
-                print('Recall %.2f lower than 0.8, not to train %s' % (record['recall'], group_dir))
+            if record['recall'] < 0.8 or record['precision'] < 0.7:
+                print('Recall %.2f < 0.8 or Precision < 0.7, not to train %s' % (record['recall'], group_dir))
                 continue
         mtime = datetime.fromtimestamp(pathlib.Path(record_path).stat().st_mtime).astimezone(timezone('Asia/Taipei'))
         if mtime < eldest_model_date:
